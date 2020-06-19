@@ -5,7 +5,8 @@ var app = new Vue({
     user: 'user',
     conversation: 1,
     conversations: [],
-    userConversations: []
+    userConversations: [],
+    enableBot: true
   },
 
   // watch todos change for localStorage persistence
@@ -93,9 +94,11 @@ var app = new Vue({
     },
     sendMessage: function(conversation, text, type, mime) {
       if(text != null || text.trim().length > 0) {
+        console.log("Chappie enabled: "+this.enableBot);
         var message = {
           conversation: conversation.id,
           source: conversation.user,
+          target: this.enableBot ? null : '!chappie',
           type: type,
           mime: mime,
           text: text

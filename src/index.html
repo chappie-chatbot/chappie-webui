@@ -55,6 +55,7 @@
                 >
                     <h2>{{ conversation.user }}@{{ conversation.id }}</h2>
                     <div class="top-right" style="margin-top:8px">
+                        <label>Bot<input type="checkbox" v-model="enableBot"/></label>
                         <a class="button" v-on:click="collapseConversation(conversation)">_</a>
                         <a class="button" v-on:click="closeConversation(conversation)">X</a>
                     </div>
