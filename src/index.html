@@ -69,8 +69,8 @@
                                     :class="{ left: message.source==conversation.user, right: message.source!=conversation.user }"
                             >
                                 <p v-if="message.type=='text'">{{ message.text }}</p>
-                                <img v-else-if="isImage(message)" v-bind:src="contentUrl(message)"/>
-                                <a class="button" v-else v-bind:href="contentUrl(message)" target="_blank"><i class="gg-attachment"></i></a>
+                                <img v-else-if="isImage(message)" v-bind:src="contentUrl(message)" style="max-width:100%"/>
+                                <a class="button" v-else v-bind:href="contentUrl(message)" target="_blank"><i class="gg-attachment"></i>&nbsp;Click here to view</a>
                                 <cite>{{ message.source }}</cite>
                             </li>
                         </ul>
