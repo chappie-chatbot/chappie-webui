@@ -54,8 +54,8 @@
                         :key="conversation.id"
                 >
                     <h2>{{ conversation.user }}@{{ conversation.id }}</h2>
-                    <div class="top-right" style="margin-top:8px">
-                        <label>Bot<input type="checkbox" v-model="enableBot"/></label>
+                    <div class="top-right">
+                        <a class="button" :class="{'grey-button':!conversation.botEnabled}" v-on:click="toggleBotEnabled(conversation)">{{ conversation.botEnabled ? '1' : '0' }}</a>
                         <a class="button" v-on:click="collapseConversation(conversation)">_</a>
                         <a class="button" v-on:click="closeConversation(conversation)">X</a>
                     </div>
@@ -69,7 +69,7 @@
                                     :class="{ left: message.source==conversation.user, right: message.source!=conversation.user }"
                             >
                                 <p v-if="message.type=='text'">{{ message.text }}</p>
-                                <img v-else-if="isImage(message)" v-bind:src="blobUrl(message)"/>
+                                <img v-else-if="isImage(message)" v-bind:src="contentUrl(message)"/>
                                 <a class="button" v-else v-bind:href="contentUrl(message)" target="_blank"><i class="gg-attachment"></i></a>
                                 <cite>{{ message.source }}</cite>
                             </li>

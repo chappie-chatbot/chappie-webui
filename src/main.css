@@ -39,6 +39,10 @@ section {
 .button:hover {
     border-color: #007766;
 }
+.grey-button {
+    background-color: #666666;
+    border-color: #666666;
+}
 
 .top-right {
     position: absolute;

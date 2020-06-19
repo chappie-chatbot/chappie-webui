@@ -5,8 +5,7 @@ var app = new Vue({
     user: 'user',
     conversation: 1,
     conversations: [],
-    userConversations: [],
-    enableBot: true
+    userConversations: []
   },
 
   // watch todos change for localStorage persistence
@@ -32,7 +31,7 @@ var app = new Vue({
           return;
         }
       }
-      var conversation = {id: this.conversation, user:this.user, messageIds:{}};
+      var conversation = {id: this.conversation, user:this.user, messageIds:{}, botEnabled: true};
       this.conversations.push(conversation);
       Vue.set(conversation, 'collapsed', false);
       this.connect();
@@ -93,12 +92,12 @@ var app = new Vue({
       }
     },
     sendMessage: function(conversation, text, type, mime) {
-      if(text != null || text.trim().length > 0) {
-        console.log("Chappie enabled: "+this.enableBot);
+      if(text != null && text.trim().length > 0) {
+        console.log("Chappie enabled: "+conversation.botEnabled);
         var message = {
           conversation: conversation.id,
           source: conversation.user,
-          target: this.enableBot ? null : '!chappie',
+          target: conversation.botEnabled ? null : '!chappie',
           type: type,
           mime: mime,
           text: text
@@ -155,6 +154,9 @@ var app = new Vue({
     scrollBottom: function (conversation){
       var messageList = document.getElementById("message-list-"+conversation.id);
       messageList.scrollTop = messageList.scrollHeight;
+    },
+    toggleBotEnabled: function (conversation){
+      conversation.botEnabled = !conversation.botEnabled;
     }
   },
 
