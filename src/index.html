@@ -29,6 +29,7 @@
                     autocomplete="off"
                     placeholder="User Name"
                     v-model="user"
+                    @change="userChanged"
             />
             <label for="conversation-input">Conversation</label>
             <input
@@ -38,7 +39,11 @@
                     autocomplete="off"
                     placeholder="Conversation"
                     v-model="conversation"
+                    size="3"
             />
+            <select v-model="conversation">
+                <option v-for="conversation in userConversations">{{ conversation.id }}</option>
+            </select>
             <a class="button" v-on:click="newConversation">+</a>
         </section>
         <section class="conversations" v-show="conversations.length">
@@ -47,34 +52,41 @@
                         v-for="conversation in conversations"
                         class="conversation"
                         :key="conversation.id"
-                        :class="{ open: conversation.open }"
                 >
                     <h2>{{ conversation.user }}@{{ conversation.id }}</h2>
-                    <ul class="plain-list message-list">
-                        <li
-                                v-for="message in conversation.messages"
-                                class="message"
-                                :key="message.id"
-                                :class="{ left: message.source==conversation.user, right: message.source!=conversation.user }"
-                        >
-                            <p v-if="message.type=='text'">{{ message.text }}</p>
-                            <img v-else v-bind:src="documentToUrl(message)"/>
-                            <cite>{{ message.source }}</cite>
-                        </li>
-                    </ul>
-                    <input
-                            class="new-message"
-                            type="text"
-                            placeholder="Say something ..."
-                            v-model="conversation.message"
-                            @keyup.enter="newMessage(conversation)"
-                    />
-                    <label class="attach-document button">
-                        <i class="gg-attachment"></i>
-                        <input v-bind:id="'document-upload-file-input-'+conversation.id"
-                               type="file"
-                               @change="uploadDocument(conversation)"/>
-                    </label>
+                    <div class="top-right" style="margin-top:8px">
+                        <a class="button" v-on:click="collapseConversation(conversation)">_</a>
+                        <a class="button" v-on:click="closeConversation(conversation)">X</a>
+                    </div>
+                    <section :class="{ hidden: conversation.collapsed }">
+                        <ul v-bind:id="'message-list-'+conversation.id"
+                            class="plain-list message-list">
+                            <li
+                                    v-for="message in conversation.messages"
+                                    class="message"
+                                    :key="message.id"
+                                    :class="{ left: message.source==conversation.user, right: message.source!=conversation.user }"
+                            >
+                                <p v-if="message.type=='text'">{{ message.text }}</p>
+                                <img v-else-if="isImage(message)" v-bind:src="blobUrl(message)"/>
+                                <a class="button" v-else v-bind:href="contentUrl(message)" target="_blank"><i class="gg-attachment"></i></a>
+                                <cite>{{ message.source }}</cite>
+                            </li>
+                        </ul>
+                        <input
+                                class="new-message"
+                                type="text"
+                                placeholder="Say something ..."
+                                v-model="conversation.message"
+                                @keyup.enter="newMessage(conversation)"
+                        />
+                        <label class="attach-document button">
+                            <i class="gg-attachment"></i>
+                            <input v-bind:id="'document-upload-file-input-'+conversation.id"
+                                   type="file"
+                                   @change="uploadDocument(conversation)"/>
+                        </label>
+                    </section>
                 </li>
             </ul>
         </section>

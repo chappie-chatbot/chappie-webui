@@ -2,10 +2,10 @@
 var app = new Vue({
   // app initial state
   data: {
-    messages: {},
     user: 'user',
     conversation: 1,
-    conversations: []
+    conversations: [],
+    userConversations: []
   },
 
   // watch todos change for localStorage persistence
@@ -24,20 +24,23 @@ var app = new Vue({
   // note there's no DOM manipulation here at all.
   methods: {
     newConversation: function () {
-      console.log("User: " + this.user);
-      console.log("Conversation: " + this.conversation);
-      var conversation = {id: this.conversation, user:this.user};
+      // Update existing conversation
+      for(var existingConversation of this.conversations) {
+        if(existingConversation.id == this.conversation) {
+          existingConversation.user = this.user;
+          return;
+        }
+      }
+      var conversation = {id: this.conversation, user:this.user, messageIds:{}};
       this.conversations.push(conversation);
+      Vue.set(conversation, 'collapsed', false);
       this.connect();
       this.prepopulateConversation(conversation, -100);
-      this.stompClient.subscribe('/topic/messages/' + this.conversation, function(message) {
+      conversation.subscription = this.stompClient.subscribe('/topic/messages/' + this.conversation, function(message) {
         this.displayMessage(conversation, JSON.parse(message.body));
       }.bind(this));
     },
     newMessage: function(conversation) {
-      console.log("User: " + conversation.user);
-      console.log("Conversation: " + conversation.id);
-      console.log("Message: " + conversation.message);
       this.sendMessage(conversation, conversation.message);
       conversation.message = null;
     },
@@ -51,9 +54,6 @@ var app = new Vue({
             var stompClient = Stomp.over(socket);
             stompClient.connect({}, function(frame) {
                 console.log('Connected: ' + frame);
-//                stompClient.subscribe('/topic/messages', function(messageOutput) {
-//                    showMessageOutput(messageOutput);
-//                });
             });
             this.stompClient = stompClient;
         }
@@ -70,9 +70,9 @@ var app = new Vue({
     },
     displayMessage: function(conversation, message) {
       // Prevents duplicates
-      if(!(message.id in this.messages)){
-        this.messages[message.id] = message;
-        console.log("Display: " + JSON.stringify(message));
+      if(!(message.id in conversation.messageIds)){
+        conversation.messageIds[message.id] = message;
+        conversation.newMessage = true;
         if(conversation.messages == null){
           Vue.set(conversation, 'messages', []);
           conversation.messages = [];
@@ -83,7 +83,6 @@ var app = new Vue({
     uploadDocument: function (conversation){
       var file = document.getElementById("document-upload-file-input-"+conversation.id).files[0];
       var mime = file.type;
-      console.log("Mime: "+mime);
       var read = new FileReader();
       read.readAsBinaryString(file);
       read.onloadend = () => {
@@ -93,35 +92,81 @@ var app = new Vue({
       }
     },
     sendMessage: function(conversation, text, type, mime) {
-      var message = {
-        conversation: conversation.id,
-        source: conversation.user,
-        type: type,
-        mime: mime,
-        text: text
-      };
-      axios({
-        method: 'POST',
-        url: '/message',
-        data: {items:[message]}
-      }).then((resp) => {
-        this.displayMessage(conversation, resp.data.items[0]);
-      });
+      if(text != null || text.trim().length > 0) {
+        var message = {
+          conversation: conversation.id,
+          source: conversation.user,
+          type: type,
+          mime: mime,
+          text: text
+        };
+        axios({
+          method: 'POST',
+          url: '/message',
+          data: {items:[message]}
+        }).then((resp) => {
+          this.displayMessage(conversation, resp.data.items[0]);
+        });
+      }
     },
-    documentToUrl(message) {
+    isImage: function(message) {
+      return message.mime.trim().toLowerCase().includes("image/");
+    },
+    blobUrl: function (message) {
       if(message.type=='base64'){
         var binary = atob(message.text);
         var array = new Uint8Array(binary.length)
         for( var i = 0; i < binary.length; i++ ) { array[i] = binary.charCodeAt(i) }
         var url = URL.createObjectURL(new Blob([array]))
-        console.log(url);
         return url;
+      }
+    },
+    contentUrl: function (message) {
+      return "/message/"+message.id+"/content";
+    },
+    collapseConversation: function (conversation) {
+      conversation.collapsed = !conversation.collapsed;
+    },
+    closeConversation: function (conversation) {
+      conversation.subscription.unsubscribe();
+      var index = this.conversations.indexOf(conversation);
+      if (index > -1) {
+        this.conversations.splice(index, 1);
+      }
+    },
+    userChanged: function () {
+      this.fetchConversationsByParticipant(this.user);
+    },
+    fetchConversationsByParticipant: function (user) {
+      if(user == null)
+        user = this.user;
+      console.log("fetchConversationsByParticipant("+user+")");
+      axios({
+        method: 'GET',
+        url: '/conversation?participant='+user
+      }).then((resp) => {
+        console.log("conversations: "+JSON.stringify(resp.data.items));
+        this.userConversations = resp.data.items;
+      });
+    },
+    scrollBottom: function (conversation){
+      var messageList = document.getElementById("message-list-"+conversation.id);
+      messageList.scrollTop = messageList.scrollHeight;
+    }
+  },
+
+  updated() {
+    for(var conversation of this.conversations){
+      if(conversation.newMessage){
+        conversation.newMessage=false;
+        this.scrollBottom(conversation);
       }
     }
   },
 
   beforeMount(){
-      this.connect()
+      this.connect();
+      this.fetchConversationsByParticipant();
    },
 
   // a custom directive to wait for the DOM to be updated
