@@ -4,8 +4,16 @@ var app = new Vue({
   data: {
     user: 'user',
     conversation: 1,
-    conversations: [],
-    userConversations: []
+    conversations: [
+      {id: 2, user: 'chappieusr'},
+      {id: 3, user: 'Scott'},
+      {id: 4, user: 'Squirrel'}
+    ],
+    userConversations: [
+      // {id: 2, user: 'chappieusr'},
+      // {id: 3, user: 'Scott'},
+      // {id: 4, user: 'Squirrel'}
+      ]
   },
 
   // watch todos change for localStorage persistence
@@ -45,6 +53,7 @@ var app = new Vue({
       conversation.message = null;
     },
     connect: function() {
+      console.log("connecting...");
         if(!this.socket){
             console.log("Connecting...");
             var socket = new SockJS('/messages');
