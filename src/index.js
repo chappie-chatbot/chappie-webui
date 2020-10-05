@@ -4,16 +4,8 @@ var app = new Vue({
   data: {
     user: 'user',
     conversation: 1,
-    conversations: [
-      {id: 2, user: 'chappieusr'},
-      {id: 3, user: 'Scott'},
-      {id: 4, user: 'Squirrel'}
-    ],
-    userConversations: [
-      // {id: 2, user: 'chappieusr'},
-      // {id: 3, user: 'Scott'},
-      // {id: 4, user: 'Squirrel'}
-      ]
+    conversations: [],
+    activeConversation : {id: 0, user:"none", messages: [], messageIds:{}, botEnabled: true}
   },
 
   // watch todos change for localStorage persistence
@@ -23,6 +15,13 @@ var app = new Vue({
   // computed properties
   // http://vuejs.org/guide/computed.html
   computed: {
+    numActiveMessages: function () {
+      if(this.activeConversation.messages) {
+        return this.activeConversation.messages.length;
+      } else {
+        return 0;
+      }
+    }
   },
 
   filters: {
@@ -33,13 +32,17 @@ var app = new Vue({
   methods: {
     newConversation: function () {
       // Update existing conversation
+
       for(var existingConversation of this.conversations) {
         if(existingConversation.id == this.conversation) {
           existingConversation.user = this.user;
+          this.activeConversation = existingConversation;
+
           return;
         }
       }
       var conversation = {id: this.conversation, user:this.user, messageIds:{}, botEnabled: true};
+
       this.conversations.push(conversation);
       Vue.set(conversation, 'collapsed', false);
       this.connect();
@@ -47,8 +50,11 @@ var app = new Vue({
       conversation.subscription = this.stompClient.subscribe('/topic/messages/' + this.conversation, function(message) {
         this.displayMessage(conversation, JSON.parse(message.body));
       }.bind(this));
+      this.activeConversation = conversation;
     },
     newMessage: function(conversation) {
+      console.log("NEW message "+conversation.message);
+      console.dir(conversation);
       this.sendMessage(conversation, conversation.message);
       conversation.message = null;
     },
@@ -166,6 +172,9 @@ var app = new Vue({
     },
     toggleBotEnabled: function (conversation){
       conversation.botEnabled = !conversation.botEnabled;
+    },
+    setConversation: function (conversation) {
+      this.activeConversation = conversation;
     }
   },
 

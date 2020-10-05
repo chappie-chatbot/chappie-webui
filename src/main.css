@@ -7,11 +7,12 @@ h1 {
     font-size: 52px;
     font-weight: 100;
     text-align: center;
-    color: #009688;
+    color: antiquewhite;
     -webkit-text-rendering: optimizeLegibility;
     -moz-text-rendering: optimizeLegibility;
     text-rendering: optimizeLegibility;
-    font-family: serif;
+    font-family: 'Source Sans Pro', sans-serif;
+    font-weight: bolder;
 }
 
 section {
@@ -250,6 +251,11 @@ body,html{
 }
 .container{
     align-content: center;
+}
+.form-control {
+    background-color: rgba(0,0,0,0.3) !important;
+    border:0 !important;
+    color:white !important;
 }
 .search{
     border-radius: 15px 0 0 15px !important;

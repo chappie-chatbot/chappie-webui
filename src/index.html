@@ -7,7 +7,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js"></script>
   <script src="https://unpkg.com/vue"></script>
-
+  <script src="https://kit.fontawesome.com/ea95dbf231.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" type="text/css" href="main.css"/>
   <style>
       [v-cloak] {
@@ -21,107 +21,30 @@
     <h1>Chappie</h1>
   </header>
 
-
-
-  <section class="new-conversation block" @keyup.enter="newConversation">
-    <label for="user-input">User Name</label>
-    <input
-        id="user-input"
-        class="user-input"
-        autofocus
-        autocomplete="off"
-        placeholder="User Name"
-        v-model="user"
-        @change="userChanged"
-    />
-    <label for="conversation-input">Conversation</label>
-    <input
-        id="conversation-input"
-        class="conversation-input"
-        autofocus
-        autocomplete="off"
-        placeholder="Conversation"
-        v-model="conversation"
-        size="3"
-    />
-    <select v-model="conversation">
-      <option v-for="conversation in userConversations">{{ conversation.id }}</option>
-    </select>
-    <a class="button" v-on:click="newConversation">+</a>
-  </section>
-  <section class="conversations" v-show="conversations.length">
-    <ul class="plain-list conversation-list">
-      <li
-          v-for="conversation in conversations"
-          class="conversation"
-          :key="conversation.id"
-      >
-        <h2>{{ conversation.user }}@{{ conversation.id }}</h2>
-        <div class="top-right">
-          <a class="button" :class="{'grey-button':!conversation.botEnabled}"
-             v-on:click="toggleBotEnabled(conversation)">{{ conversation.botEnabled ? '1' : '0' }}</a>
-          <a class="button" v-on:click="collapseConversation(conversation)">_</a>
-          <a class="button" v-on:click="closeConversation(conversation)">X</a>
-        </div>
-        <section :class="{ hidden: conversation.collapsed }">
-          <ul v-bind:id="'message-list-'+conversation.id"
-              class="plain-list message-list">
-            <li
-                v-for="message in conversation.messages"
-                class="message"
-                :key="message.id"
-                :class="{ left: message.source==conversation.user, right: message.source!=conversation.user }"
-            >
-              <p v-if="message.type=='text'">{{ message.text }}</p>
-              <img v-else-if="isImage(message)" v-bind:src="blobUrl(message)" style="max-width:100%"/>
-              <a class="button" v-else v-bind:href="contentUrl(message)" target="_blank"><i
-                  class="gg-attachment"></i>&nbsp;Click here to view</a>
-              <cite>{{ message.source }}</cite>
-            </li>
-          </ul>
-          <input
-              class="new-message"
-              type="text"
-              placeholder="Say something ..."
-              v-model="conversation.message"
-              @keyup.enter="newMessage(conversation)"
-          />
-          <label class="attach-document button">
-            <i class="gg-attachment"></i>
-            <input v-bind:id="'document-upload-file-input-'+conversation.id"
-                   type="file"
-                   @change="uploadDocument(conversation)"/>
-          </label>
-        </section>
-      </li>
-    </ul>
-  </section>
-
-  <!--New style below-->
-
   <div class="container-fluid h-100">
     <div class="row justify-content-center h-100">
       <div class="col-md-4 col-xl-3 chat">
         <div class="card mb-sm-3 mb-md-0 contacts_card">
           <div class="card-header">
+            <label>Current User: {{activeConversation.user}}</label>
             <div class="input-group">
-              <input type="text" placeholder="Search..." name="" class="form-control search">
+              <input type="text" placeholder="User" name="" class="form-control search"v-model="user" @change="userChanged">
+              <input type="text" placeholder="conversation" name="" v-model="conversation" class="form-control">
+
               <div class="input-group-prepend">
-                <span class="input-group-text search_btn"><i class="fas fa-search"></i></span>
+                <span class="input-group-text search_btn" v-on:click="newConversation"><i class="fas fa-arrow-alt-circle-right"></i></span>
               </div>
             </div>
           </div>
           <div class="card-body contacts_body">
             <ul class="contacts">
-              <li v-for="conversation in conversations" class="active">
+              <li v-for="conversation in conversations" class="active" v-on:click="setConversation(conversation)">
                 <div class="d-flex bd-highlight">
                   <div class="img_cont">
                     <img src="chappie.jpg" class="rounded-circle user_img">
-                    <span class="online_icon"></span>
                   </div>
                   <div class="user_info">
-                    <span>{{ conversation.user }}</span>
-                    <p>{{ conversation.user }} is online</p>
+                    <span>{{ conversation.id }}, {{conversation.user}}</span>
                   </div>
                 </div>
               </li>
@@ -138,11 +61,10 @@
               <div class="img_cont">
                 <img src="chappie.jpg"
                      class="rounded-circle user_img">
-                <span class="online_icon"></span>
               </div>
               <div class="user_info">
-                <span>Chat with Chappie</span>
-                <p>42 Messages</p>
+                <span>Chat room {{activeConversation.id}}</span>
+                <p>{{numActiveMessages}} Messages</p>
               </div>
               <div class="video_cam">
                 <span><i class="fas fa-video"></i></span>
@@ -160,24 +82,20 @@
             </div>
           </div>
 
-          <div class="card-body msg_card_body">
-            <div class="d-flex justify-content-start mb-4">
+          <div v-bind:id="activeConversation.id" class="card-body msg_card_body">
+
+            <div class="d-flex mb-4"
+                 v-for="message in activeConversation.messages"
+                 :key="message.id"
+                 :class="{ 'justify-content-start': message.source==activeConversation.user, 'justify-content-end': message.source!=activeConversation.user }"
+            >
               <div class="img_cont_msg">
                 <img src="chappie.jpg"
                      class="rounded-circle user_img_msg">
               </div>
               <div class="msg_cotainer">
-                Hi, how are you Scott?
-                <span class="msg_time">8:40 AM, Today</span>
-              </div>
-            </div>
-            <div class="d-flex justify-content-end mb-4">
-              <div class="msg_cotainer_send">
-                Hi Chappie i am good tnx how about you?
-                <span class="msg_time_send">8:55 AM, Today</span>
-              </div>
-              <div class="img_cont_msg">
-                <img src="robot.jpg" class="rounded-circle user_img_msg">
+                {{message.text}}
+                <span class="msg_time">{{message.source}}</span>
               </div>
             </div>
           </div>
@@ -187,9 +105,10 @@
                 <span class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></span>
               </div>
               <textarea name="" class="form-control type_msg"
-                        placeholder="Type your message..."></textarea>
+                        placeholder="Type your message..." v-model="activeConversation.message"
+                        @keyup.enter="newMessage(activeConversation)"></textarea>
               <div class="input-group-append">
-                <span class="input-group-text send_btn"><i class="fas fa-location-arrow"></i></span>
+                <span class="input-group-text send_btn" v-on:click="newMessage(activeConversation)"><i class="fas fa-location-arrow"></i></span>
               </div>
             </div>
           </div>
