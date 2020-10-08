@@ -101,8 +101,9 @@
           </div>
           <div class="card-footer">
             <div class="input-group">
-              <div class="input-group-append">
-                <span class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></span>
+              <div class="input-group-prepend">
+                <input type="file" id="files" class="hidden" @change="uploadDocument(activeConversation)"/>
+                <label class="fas fa-paperclip input-group-text attach_btn" for="files"></label>
               </div>
               <textarea name="" class="form-control type_msg"
                         placeholder="Type your message..." v-model="activeConversation.message"

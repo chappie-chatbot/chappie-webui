@@ -96,7 +96,7 @@ var app = new Vue({
       }
     },
     uploadDocument: function (conversation){
-      var file = document.getElementById("document-upload-file-input-"+conversation.id).files[0];
+      var file = document.getElementById("files").files[0];
       var mime = file.type;
       var read = new FileReader();
       read.readAsBinaryString(file);
